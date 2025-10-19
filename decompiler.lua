@@ -1,67 +1,45 @@
-local obfuscatedCode = game:HttpGet("https://raw.githubusercontent.com/nazarpetro897-del/gtddd5/refs/heads/main/gtdfixx33s.lua")
+-- This will decompile all scripts currently in the game
+print("=== GAME SCRIPT DECOMPILER ===\n")
 
-print("Downloaded script, loading...")
+local output = ""
+local count = 0
 
-local success, func = pcall(loadstring, obfuscatedCode)
-
-if success and func then
-    print("✓ Script loaded successfully!")
-    
-    -- Create a LocalScript instance to hold the function
-    local tempScript = Instance.new("LocalScript")
-    tempScript.Name = "TempDecompilerScript"
-    
-    -- Some executors need the script to be parented
-    tempScript.Parent = game:GetService("CoreGui")
-    
-    if decompile then
-        print("Attempting to decompile...")
+for _, script in pairs(game:GetDescendants()) do
+    if script:IsA("LocalScript") or script:IsA("ModuleScript") then
+        count = count + 1
         
-        -- Try different decompile methods
-        local decompiled
-        local decompileSuccess = false
+        print(string.format("[%d] Decompiling: %s", count, script:GetFullName()))
         
-        -- Method 1: Direct decompile
-        decompileSuccess, decompiled = pcall(function()
-            return decompile(tempScript)
-        end)
+        output = output .. string.format("\n\n=== [%d] %s ===\n", count, script:GetFullName())
+        output = output .. "Type: " .. script.ClassName .. "\n"
+        output = output .. "Name: " .. script.Name .. "\n\n"
         
-        if not decompileSuccess then
-            -- Method 2: Try with the function directly
-            decompileSuccess, decompiled = pcall(function()
-                return debug.getinfo(func).source
-            end)
-        end
-        
-        if decompileSuccess and decompiled then
-            print("✓ Decompiled successfully!\n")
-            print("=== DECOMPILED CODE ===\n")
-            print(decompiled)
+        if decompile then
+            local success, code = pcall(decompile, script)
             
-            if setclipboard then
-                setclipboard(decompiled)
-                print("\n✓ Copied to clipboard!")
+            if success then
+                output = output .. "--- CODE START ---\n"
+                output = output .. code
+                output = output .. "\n--- CODE END ---\n"
+            else
+                output = output .. "✗ Failed to decompile: " .. tostring(code) .. "\n"
             end
         else
-            warn("✗ Decompile failed. Trying alternative method...")
-            
-            -- Method 3: Just run it and see what it creates
-            print("Executing script to see what it does...")
-            local execSuccess, execResult = pcall(func)
-            
-            if execSuccess then
-                print("✓ Script executed successfully")
-                print("Check what was created in the game!")
-            else
-                warn("✗ Execution failed:", execResult)
-            end
+            output = output .. "✗ decompile() not available\n"
+            break
         end
         
-        tempScript:Destroy()
-    else
-        warn("✗ decompile() function not available in your executor")
-        tempScript:Destroy()
+        output = output .. string.rep("=", 60) .. "\n"
     end
+end
+
+output = string.format("Found %d scripts\n", count) .. output
+
+print("\n✓ Decompiled " .. count .. " scripts!")
+
+if setclipboard then
+    setclipboard(output)
+    print("✓ Copied all decompiled code to clipboard!")
 else
-    warn("✗ Failed to load script:", func)
+    print(output)
 end
